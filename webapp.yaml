@@ -1,0 +1,91 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: webapp
+  annotations:
+    service.beta.kubernetes.io/azure-load-balancer-internal: "true"
+  labels:
+    app: webapp
+spec:
+  type: LoadBalancer
+  ports:
+  - port: 5000
+    name: http
+  selector:
+    app: webapp
+---    
+apiVersion: v1
+kind: Service
+metadata:
+  name: webapp1
+  labels:
+    app: webapp
+spec:
+  type: NodePort
+  ports:
+  - port: 5000
+    name: http
+  selector:
+    ver: app1
+---    
+apiVersion: v1
+kind: Service
+metadata:
+  name: webapp2
+  labels:
+    app: webapp
+spec:
+  type: NodePort
+  ports:
+  - port: 5000
+    name: http
+  selector:
+    ver: app2
+---    
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: webapp1
+spec:
+  replicas: 1
+  template:
+    metadata:
+      name: webapp1
+      labels:
+        app: webapp
+        ver: app1       
+    spec:
+      hostname: webapp1
+      containers:
+      - name: webapp
+        image: irom77/webapp:latest
+        env:
+        - name: URL
+          value: "http://webapp2:5000"
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 80
+---        
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: webapp2
+spec:
+  replicas: 1
+  template:
+    metadata:
+      name: webapp2
+      labels:
+        app: webapp
+        ver: app2
+    spec:
+      hostname: webapp2
+      containers:
+      - name: webapp
+        image: irom77/webapp:latest
+        env:
+        - name: URL
+          value: "http://webapp1:5000"
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 80
